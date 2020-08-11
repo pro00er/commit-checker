@@ -18,7 +18,7 @@
   - custom.json 에서 슬랙 메시지, 정기적으로 실행되는 주기를 변경할 수 있습니다.
 
 ## Contributing
-- Thanks to @ohahohah
+- Thanks to [@ohahohah](https://github.com/ohahohah)
 
 ## Reference
 - [slack 메시지 전송 API](https://api.slack.com/messaging/sending)
