@@ -1,0 +1,24 @@
+{
+  "github": {
+    "user": "your-username",
+    "token": "your-personal-access-tokens"
+  },
+  "committer": [
+    "your-repo-commiter-01",
+    "your-repo-commiter-02"
+  ],
+  "repo": {
+    "owner": "owner",
+    "name": "repo-name"
+  },
+  "slack": {
+    "bot_name": "your-bot-name",
+    "token": "your-bot-token",
+    "channel_name": "channel-name-to-send-the-message",
+    "channel_id": "channel-id-to-send-the-message",
+    "user_id": {
+      "your-repo-commiter-01": "slack-user-id-01",
+      "your-repo-commiter-02": "slack-user-id-02"
+    }
+  }
+}

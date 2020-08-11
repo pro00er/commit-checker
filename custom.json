@@ -1,0 +1,9 @@
+{
+  "slack_msg": "오늘은 꼭 회고 commit 해주세요!",
+  "scheduled": {
+    "day_of_week": "tue-sat",
+    "hour": 20,
+    "minute": 30,
+    "end_date": "2020-11-20"
+  }
+}
