@@ -1,14 +1,12 @@
+import atexit
+import datetime
+import json
 import logging
 from logging.config import fileConfig
 
-import atexit
-
-from apscheduler.schedulers.background import BackgroundScheduler
-
 import requests
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask
-import json
-import datetime
 
 app = Flask(__name__)
 
@@ -25,9 +23,20 @@ with open('custom.json', 'r') as f:
 # TODO: remove test url
 @app.route('/', methods=['GET'])
 def check_commit_yesterday():
-    yesterday = (datetime.datetime.now() - datetime.timedelta(days=1)).astimezone().isoformat()
+    check_commit_n_days_ago(1)
 
-    result = count_commit(yesterday)
+    return 'dummy'
+
+
+def check_commit_n_days_ago(n_days=1):
+    """현재부터 24* n 시간 전(n일 전)까지의 commit 수가 0이면, 해당 사용자에게 슬랙 알람 메시지를 전송합니다.
+
+        Keyword arguments:
+        n_days -- 지금으로부터 n 일 전 (기본값 1)
+    """
+    before_date = (datetime.datetime.now() - datetime.timedelta(days=n_days)).astimezone().isoformat()
+
+    result = count_commit(before_date)
 
     for author in config['committer']:
         if result[author] == 0:
@@ -37,6 +46,11 @@ def check_commit_yesterday():
 
 
 def count_commit(checked_date):
+    """현재부터 checked_date 후로 발생한 특정 repo commit 수를 commiter별(config.json에 입력된 commiter)로 확인합니다.
+
+            Keyword arguments:
+            checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
+    """
     url = 'https://api.github.com/repos/{0}/{1}/commits'.format(config['repo']['owner'], config['repo']['name'])
     token_user = config['github']['user']
     token = config['github']['token']
@@ -57,6 +71,11 @@ def count_commit(checked_date):
 
 
 def send_slack_msg(author):
+    """config 에 등록된 채널에 특정 슬랙 메시지를 전송합니다. github author 에 해당되는 user 를 멘션합니다
+
+                Keyword arguments:
+                author -- 슬랙 메시지에 멘션할 github author. config.json 에 등록해둔 user_id 를 사용
+    """
     url = 'https://slack.com/api/chat.postMessage'
     headers = {'Authorization': 'Bearer {}'.format(config['slack']['token'])}
 
@@ -68,6 +87,7 @@ def send_slack_msg(author):
     r = requests.post(url, data=body_data, headers=headers)
 
 
+# Set schedule
 scheduler = BackgroundScheduler()
 scheduler.add_job(func=check_commit_yesterday, trigger='cron', day_of_week=custom['scheduled']['day_of_week'],
                   hour=custom['scheduled']['hour'], minute=custom['scheduled']['minute'],
