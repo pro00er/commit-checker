@@ -12,13 +12,17 @@
 - 설정값에 미치지 못하는 commit 수일 경우, 슬랙 채널에 알람 메시지를 전송합니다. 
 
 ## 사용 How To Use
-*(구현 후 작성 예정)*
+- 설정파일 변경
+  - 설정파일 예제(config.json.example)에서 github, slack 정보를 업데이트 한 후, config.json 으로 이름을 바꿔주세요.
+- 세부 설정 변경
+  - custom.json 에서 슬랙 메시지, 정기적으로 실행되는 주기를 변경할 수 있습니다.
 
 ## Contributing
 - Thanks to @ohahohah
 
 ## Reference
-*(구현 후 작성 예정)*
+- [slack 메시지 전송 API](https://api.slack.com/messaging/sending)
+- [github commit list API](https://docs.github.com/en/rest/reference/repos#commits)
 
 ## Links
 - Repository: https://github.com/pro00er/commit-checker
