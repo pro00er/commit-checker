@@ -1,4 +1,11 @@
 {
+  "job": {
+    "func": {
+      "file": "file-name containing the function to be scheduled",
+      "name": "function-name-to-be-scheduled",
+      "args": ['function-argument01', 'function-argument02']
+    }
+  },
   "github": {
     "user": "your-username",
     "token": "your-personal-access-tokens"
