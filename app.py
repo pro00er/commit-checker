@@ -6,6 +6,7 @@ from logging.config import fileConfig
 
 import requests
 from apscheduler.schedulers.background import BackgroundScheduler
+from flask_apscheduler import APScheduler
 from flask import Flask
 
 app = Flask(__name__)
@@ -13,22 +14,45 @@ app = Flask(__name__)
 fileConfig('logging.cfg')
 logger = logging.getLogger('root')
 
-with open('config.json', 'r') as f:
+# MODE = 'prod' || 'dev'
+MODE = 'dev'
+
+with open('config_{}.json'.format(MODE), 'r') as f:
     config = json.load(f)
 
-with open('custom.json', 'r') as f:
+with open('custom_{}.json'.format(MODE), 'r') as f:
     custom = json.load(f)
+
+
+class Config(object):
+    JOBS = [
+        {
+            'id': '{}_job01'.format(MODE),
+            'func': '{0}:{1}'.format(config['job']['func']["file"], config['job']['func']["name"]),
+            'args': config['job']['func']["args"],
+            'trigger': 'cron',
+            'day_of_week': custom['scheduled']['day_of_week'],
+            'hour': custom['scheduled']['hour'],
+            'minute': custom['scheduled']['minute'],
+            'end_date': custom['scheduled']['end_date'],
+        }
+    ]
+
+    SCHEDULER_EXECUTORS = {
+        'default': {'type': 'threadpool', 'max_workers': 1},
+    }
+
+    SCHEDULER_JOB_DEFAULTS = {
+        'coalesce': False,
+        'max_instances': 1,
+    }
+
+    SCHEDULER_API_ENABLED = True
 
 
 # TODO: remove test url
 @app.route('/', methods=['GET'])
-def check_commit_yesterday():
-    check_commit_n_days_ago(1)
-
-    return 'dummy'
-
-
-def check_commit_n_days_ago(n_days=1):
+def send_msg_to_zero_committer(n_days=1):
     """현재부터 24* n 시간 전(n일 전)까지의 commit 수가 0이면, 해당 사용자에게 슬랙 알람 메시지를 전송합니다.
 
         Keyword arguments:
@@ -40,7 +64,7 @@ def check_commit_n_days_ago(n_days=1):
 
     for author in config['committer']:
         if result[author] == 0:
-            send_slack_msg(author)
+            send_slack_mention_msg(author)
 
     return 'dummy'
 
@@ -70,32 +94,75 @@ def count_commit(checked_date):
     return result
 
 
-def send_slack_msg(author):
+# TODO
+def count_keyword_commit(checked_date, keywords):
+    """현재부터 checked_date 후로 발생한 특정 repo commit 중,
+    특정 키워드가 포함된 commit 수를 commiter 별로 반환합니다.
+
+            Keyword arguments:
+            checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
+    """
+    url = 'https://api.github.com/repos/{0}/{1}/commits'.format(config['repo']['owner'], config['repo']['name'])
+    token_user = config['github']['user']
+    token = config['github']['token']
+
+    result = {}
+
+    for author in config['committer']:
+        param = {'author': author, 'since': checked_date}
+        r = requests.get(url, params=param, auth=(token_user, token))
+
+        if r.status_code == 200:
+            commit_list = r.json()
+            # specific_commits = commit_list['commit_message'].contain(keywords)
+            # result[author] = len(specific_commits)
+        else:
+            app.logger.error(['Github API error: ', r.status_code, r.json()['message']])
+
+    return result
+
+
+def send_slack_mention_msg(author):
     """config 에 등록된 채널에 특정 슬랙 메시지를 전송합니다. github author 에 해당되는 user 를 멘션합니다
 
                 Keyword arguments:
-                author -- 슬랙 메시지에 멘션할 github author. config.json 에 등록해둔 user_id 를 사용
+                author -- 슬랙 메시지에 멘션할 github author. config_prod.json 에 등록해둔 user_id 를 사용
     """
+    slack_user_id = config['slack']['user_id'][author]
+    msg = '<@{}> '.format(slack_user_id) + custom['slack_msg']['format'].format(*custom['slack_msg']['args'])
+
+    send_slack_msg(msg)
+
+
+def send_slack_msg(msg):
     url = 'https://slack.com/api/chat.postMessage'
     headers = {'Authorization': 'Bearer {}'.format(config['slack']['token'])}
-
-    slack_user_id = config['slack']['user_id'][author]
-    msg = '{0} <@{1}>'.format(custom['slack_msg'], slack_user_id)
-
     body_data = {'channel': config['slack']['channel_id'], 'text': msg}
 
-    r = requests.post(url, data=body_data, headers=headers)
+    requests.post(url, data=body_data, headers=headers)
 
 
 # Set schedule
-scheduler = BackgroundScheduler()
-scheduler.add_job(func=check_commit_yesterday, trigger='cron', day_of_week=custom['scheduled']['day_of_week'],
-                  hour=custom['scheduled']['hour'], minute=custom['scheduled']['minute'],
-                  end_date=custom['scheduled']['end_date'])
-scheduler.start()
+# scheduler = BackgroundScheduler(timezone=custom['scheduled']['timezone'])
+# scheduler.add_job(func=check_commit_yesterday, trigger='cron', day_of_week=custom['scheduled']['day_of_week'],
+#                   hour=custom['scheduled']['hour'], minute=custom['scheduled']['minute'],
+#                   end_date=custom['scheduled']['end_date'])
 
-# Shut down the scheduler when exiting the app
-atexit.register(lambda: scheduler.shutdown())
+# scheduler = BackgroundScheduler(timezone=custom['dev']['scheduled']['timezone'])
+# scheduler.add_job(func=test, trigger='cron', day_of_week=custom['dev']['scheduled']['day_of_week'],
+#                   hour=custom['dev']['scheduled']['hour'], minute=custom['dev']['scheduled']['minute'],
+#                   end_date=custom['dev']['scheduled']['end_date'])
+#
+# scheduler.start()
+#
+# # Shut down the scheduler when exiting the app
+# atexit.register(lambda: scheduler.shutdown())
+
 
 if __name__ == '__main__':
+    app.config.from_object(Config())
+    scheduler = APScheduler()
+    scheduler.init_app(app)
+    scheduler.start()
+
     app.run('0.0.0.0', port=5002, debug=True)

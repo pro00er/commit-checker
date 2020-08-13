@@ -1,0 +1,19 @@
+{
+  "count_commit_keyword": [
+    "^(일일|격일|주간|월간) 회고"
+  ],
+  "slack_msg": {
+    "format": "This is dev test message {} {}",
+    "args": [
+      "args0",
+      "args1"
+    ]
+  },
+  "scheduled": {
+    "timezone": "Asia/Seoul",
+    "day_of_week": "tue-sat",
+    "hour": 21,
+    "minute": 58,
+    "end_date": "2020-11-20"
+  }
+}

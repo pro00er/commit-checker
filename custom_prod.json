@@ -1,0 +1,17 @@
+{
+  "count_commit_keyword": [
+    "^(일일|격일|주간|월간) 회고"
+  ],
+  "slack_msg": {
+    "format": "오늘은 꼭 회고 commit 해주세요!",
+    "args": [
+    ]
+  },
+  "scheduled": {
+    "timezone": "Asia/Seoul",
+    "day_of_week": "tue-sat",
+    "hour": 20,
+    "minute": 30,
+    "end_date": "2020-11-20"
+  }
+}
