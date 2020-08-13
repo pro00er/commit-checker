@@ -13,9 +13,13 @@
 
 ## 사용 How To Use
 - 설정파일 변경
-  - 설정파일 예제(config.json.example)에서 github, slack 정보를 업데이트 한 후, config.json 으로 이름을 바꿔주세요.
+  - 설정파일 예제(config.json.example)에서 github, slack 정보를 업데이트 한 후, 아래처럼 이름을 바꿔주세요.
+    - `config_dev.json` : 테스트용 (for development) 설정파일명 
+    - `config_prod.json` : 실제로 서버에서 동작시킬 설정파일명
 - 세부 설정 변경
-  - custom.json 에서 슬랙 메시지, 정기적으로 실행되는 주기를 변경할 수 있습니다.
+  - 전송할 슬랙 메시지(slack_msg), 정기적으로 동작이 실행되는 주기(scheduled)를 변경할 수 있습니다.
+    - `custom_dev.json` : 테스트용 (for development) 설정파일명 
+    - `custom_prod.json` : 실제로 서버에서 동작시킬 설정파일명
 
 ## Contributing
 - Thanks to [@ohahohah](https://github.com/ohahohah)
