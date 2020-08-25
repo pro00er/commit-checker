@@ -165,4 +165,4 @@ if __name__ == '__main__':
     scheduler.init_app(app)
     scheduler.start()
 
-    app.run('0.0.0.0', port=5002, debug=True)
+    app.run('0.0.0.0', port=5002, debug=False)
