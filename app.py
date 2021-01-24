@@ -1,4 +1,3 @@
-import atexit
 import datetime
 import json
 import logging
@@ -18,10 +17,10 @@ logger = logging.getLogger('root')
 MODE = 'dev'
 
 with open('config_{}.json'.format(MODE), 'r') as f:
-    config = json.load(f)
+    data = json.load(f)
 
-with open('custom_{}.json'.format(MODE), 'r') as f:
-    custom = json.load(f)
+config = data['config']
+custom = data['custom']
 
 
 class Config(object):
@@ -147,7 +146,7 @@ def send_slack_msg(msg):
 # scheduler.add_job(func=check_commit_yesterday, trigger='cron', day_of_week=custom['scheduled']['day_of_week'],
 #                   hour=custom['scheduled']['hour'], minute=custom['scheduled']['minute'],
 #                   end_date=custom['scheduled']['end_date'])
-
+#
 # scheduler = BackgroundScheduler(timezone=custom['dev']['scheduled']['timezone'])
 # scheduler.add_job(func=test, trigger='cron', day_of_week=custom['dev']['scheduled']['day_of_week'],
 #                   hour=custom['dev']['scheduled']['hour'], minute=custom['dev']['scheduled']['minute'],
