@@ -64,7 +64,7 @@ def test():
 
 @app.route('/', methods=['GET'])
 def home():
-    info = {"repo": f'{git_cfg["repo"]["owner"]}/{git_cfg["repo"]["name"]}'}
+    info = {"repo": f'{git_cfg["repo"]["owner"]}/{git_cfg["repo"]["name"]}', "keyword": checker_cfg['commit_keyword']}
 
     return render_template('index.html', info=info)
 
