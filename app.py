@@ -17,23 +17,25 @@ logger = logging.getLogger('root')
 MODE = 'dev'
 
 with open('config_{}.json'.format(MODE), 'r') as f:
-    data = json.load(f)
+    config = json.load(f)
 
-config = data['config']
-custom = data['custom']
+git_config = config['github']
+slack_config = config['slack']
 
 
 class Config(object):
+    job_func = config['job']['func']
+    schedule = config['job']['schedule']
     JOBS = [
         {
-            'id': '{}_job01'.format(MODE),
-            'func': '{0}:{1}'.format(config['job']['func']["file"], config['job']['func']["name"]),
-            'args': config['job']['func']["args"],
+            'id': f'{MODE}_job01',
+            'func': f'{job_func["file"]}:{job_func["name"]}',
+            'args': job_func["args"],
             'trigger': 'cron',
-            'day_of_week': custom['scheduled']['day_of_week'],
-            'hour': custom['scheduled']['hour'],
-            'minute': custom['scheduled']['minute'],
-            'end_date': custom['scheduled']['end_date'],
+            'day_of_week': schedule['day_of_week'],
+            'hour': schedule['hour'],
+            'minute': schedule['minute'],
+            'end_date': schedule['end_date'],
         }
     ]
 
@@ -50,7 +52,7 @@ class Config(object):
 
 
 # TODO: remove test url
-@app.route('/', methods=['GET'])
+# @app.route('/', methods=['GET'])
 def send_msg_to_zero_committer(n_days=1):
     """현재부터 24* n 시간 전(n일 전)까지의 commit 수가 0이면, 해당 사용자에게 슬랙 알람 메시지를 전송합니다.
 
@@ -61,7 +63,7 @@ def send_msg_to_zero_committer(n_days=1):
 
     result = count_commit(before_date)
 
-    for author in config['committer']:
+    for author in git_config['committer']:
         if result[author] == 0:
             send_slack_mention_msg(author)
 
@@ -74,13 +76,13 @@ def count_commit(checked_date):
             Keyword arguments:
             checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
     """
-    url = 'https://api.github.com/repos/{0}/{1}/commits'.format(config['repo']['owner'], config['repo']['name'])
-    token_user = config['github']['user']
-    token = config['github']['token']
+    url = f'https://api.github.com/repos/{git_config["repo"]["owner"]}/{git_config["repo"]["name"]}/commits'
+    token_user = git_config['user']
+    token = git_config['token']
 
     result = {}
 
-    for author in config['committer']:
+    for author in git_config['committer']:
         param = {'author': author, 'since': checked_date}
         r = requests.get(url, params=param, auth=(token_user, token))
 
@@ -101,13 +103,14 @@ def count_keyword_commit(checked_date, keywords):
             Keyword arguments:
             checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
     """
-    url = 'https://api.github.com/repos/{0}/{1}/commits'.format(config['repo']['owner'], config['repo']['name'])
-    token_user = config['github']['user']
-    token = config['github']['token']
+
+    url = f'https://api.github.com/repos/{git_config["repo"]["owner"]}/{git_config["repo"]["name"]}/commits'
+    token_user = git_config['user']
+    token = git_config['token']
 
     result = {}
 
-    for author in config['committer']:
+    for author in git_config['committer']:
         param = {'author': author, 'since': checked_date}
         r = requests.get(url, params=param, auth=(token_user, token))
 
@@ -127,16 +130,15 @@ def send_slack_mention_msg(author):
                 Keyword arguments:
                 author -- 슬랙 메시지에 멘션할 github author. config_prod.json 에 등록해둔 user_id 를 사용
     """
-    slack_user_id = config['slack']['user_id'][author]
-    msg = '<@{}> '.format(slack_user_id) + custom['slack_msg']['format'].format(*custom['slack_msg']['args'])
+    msg = f'<@{slack_config['user_id'][author]}> ' + slack_config['msg']['format'].format(*slack_config['msg']['args'])
 
     send_slack_msg(msg)
 
 
 def send_slack_msg(msg):
     url = 'https://slack.com/api/chat.postMessage'
-    headers = {'Authorization': 'Bearer {}'.format(config['slack']['token'])}
-    body_data = {'channel': config['slack']['channel_id'], 'text': msg}
+    headers = {'Authorization': f'Bearer {slack_config["token"]}'}
+    body_data = {'channel': slack_config['channel_id'], 'text': msg}
 
     requests.post(url, data=body_data, headers=headers)
 
@@ -164,4 +166,4 @@ if __name__ == '__main__':
     scheduler.init_app(app)
     scheduler.start()
 
-    app.run('0.0.0.0', port=5002, debug=False)
+    app.run('0.0.0.0', port=5002, debug=True)

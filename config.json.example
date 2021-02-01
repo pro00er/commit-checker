@@ -1,19 +1,24 @@
 {
-  "config": {
-    "job": {
-      "func": {
-        "file": "file-name containing the function to be scheduled",
-        "name": "function-name-to-be-scheduled",
-        "args": [
-          'function-argument01',
-          'function-argument02'
-        ]
-      }
+  "job": {
+    "func": {
+      "file": "file-name containing the function to be scheduled",
+      "name": "function-name-to-be-scheduled",
+      "args": [
+        'function-argument01',
+        'function-argument02'
+      ]
     },
-    "github": {
-      "user": "your-username",
-      "token": "your-personal-access-tokens"
-    },
+    "schedule": {
+      "timezone": "Asia/Seoul",
+      "day_of_week": "tue-sat",
+      "hour": 21,
+      "minute": 58,
+      "end_date": "2020-11-20"
+    }
+  },
+  "github": {
+    "user": "your-username",
+    "token": "your-personal-access-tokens",
     "committer": [
       "your-repo-commiter-01",
       "your-repo-commiter-02"
@@ -22,32 +27,25 @@
       "owner": "owner",
       "name": "repo-name"
     },
-    "slack": {
-      "bot_name": "your-bot-name",
-      "token": "your-bot-token",
-      "channel_name": "channel-name-to-send-the-message",
-      "channel_id": "channel-id-to-send-the-message",
-      "user_id": {
-        "your-repo-commiter-01": "slack-user-id-01",
-        "your-repo-commiter-02": "slack-user-id-02"
-      }
-    }
-  },
-  "custom": {
     "count_commit_keyword": [
       "commit-keyword-regexp"
-    ],
-    "slack_msg": {
-      "format": "slack-bot-message",
-      "args": [
-      ]
+    ]
+  },
+  "slack": {
+    "bot_name": "your-bot-name",
+    "token": "your-bot-token",
+    "channel_name": "channel-name-to-send-the-message",
+    "channel_id": "channel-id-to-send-the-message",
+    "user_id": {
+      "your-repo-commiter-01": "slack-user-id-01",
+      "your-repo-commiter-02": "slack-user-id-02"
     },
-    "scheduled": {
-      "timezone": "Asia/Seoul",
-      "day_of_week": "tue-sat",
-      "hour": 20,
-      "minute": 30,
-      "end_date": "2020-11-20"
+    "msg": {
+      "format": "slack-bot-message-format",
+      "args": [
+        'msg format argument 01',
+        'msg format argument 02'
+      ]
     }
   }
 }
