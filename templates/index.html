@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- Bootstrap CSS -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet"
+              integrity="sha384-giJF6kkoqNQ00vy+HMDP7azOuL0xtbfIcaT9wjKHr8RbDVddVHyTfAAsrekwKmP1"
+              crossorigin="anonymous">
+
+        <title>Commit checker</title>
+
+        <style>
+            .mx-0 {
+                margin: 30px 30px 30px 30px !important;
+            }
+
+
+        </style>
+    </head>
+    <body>
+        <div class="mx-0">
+            <h1>Commit checker</h1>
+            <h4>Repo : <a href="https://github.com/{{info['repo']}}">{{info['repo']}}</a></h4>
+            <div class="row mb-3">
+                <label for="inputGithubUsername" class="col-sm-2 col-form-label">Committer</label>
+                <div class="col-sm-5">
+                    <input type="text" class="form-control" id="inputGithubUsername"
+                           placeholder="Github User Name">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label for="inputSinceDatetime" class="col-sm-2 col-form-label">Since</label>
+                <div class="col-sm-5">
+                    <input class="form-control" type="datetime-local" id="inputSinceDatetime">
+                </div>
+            </div>
+            <div class="row mb-3">
+                <label for="inputUntilDatetime" class="col-sm-2 col-form-label">Until</label>
+                <div class="col-sm-5">
+                    <input class="form-control" type="datetime-local" id="inputUntilDatetime">
+                </div>
+            </div>
+            <button class="btn btn-primary" onclick="showCommitInfo()">Show</button>
+            <button class="btn btn-secondary" onclick="sendSlackMsg()">Send to Slack</button>
+
+            <div id="commitInfo">
+            </div>
+        </div>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/js/bootstrap.bundle.min.js"
+                integrity="sha384-ygbV9kiqUc6oa4msXn9868pTtWMgiQaeYH7/t7LECLbyPA2x65Kgf80OJFdroafW"
+                crossorigin="anonymous"></script>
+        <script>
+            let currentTime = new Date().toISOString().slice(0, 19)
+            document.getElementById('inputSinceDatetime').value = currentTime;
+            document.getElementById('inputUntilDatetime').value = currentTime;
+
+            const COUNT_API_URL = '/commit/cnt'
+            const SLACK_MSG_API_URL = '/commit/slack'
+
+            function showCommitInfo() {
+                fetch(makeReqUrl(COUNT_API_URL))
+                    .then(response => response.json())
+                    .then(result => {
+                        let result_element = document.getElementById('commitInfo')
+                        let msg = `<div>${result['author']} 의 commit 수: ${result['cnt']}</div>`
+
+                        result_element.innerHTML = "";
+                        result_element.insertAdjacentHTML('beforeend', msg)
+                    })
+                    .catch(err => console.log(err))
+            }
+
+            function sendSlackMsg() {
+                fetch(makeReqUrl(SLACK_MSG_API_URL))
+                    .catch(err => console.log(err))
+            }
+
+            function makeReqUrl(apiUrl) {
+                const params = {
+                    username: document.getElementById('inputGithubUsername').value,
+                    since: document.getElementById('inputSinceDatetime').value,
+                    until: document.getElementById('inputUntilDatetime').value
+                };
+
+                const url = apiUrl + '?' + new URLSearchParams(params)
+
+                return url
+            }
+
+        </script>
+    </body>
+</html>
