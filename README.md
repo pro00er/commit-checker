@@ -34,4 +34,4 @@
 ## License
 오시영 – ohahohah.dev at gmail.com
 
-MIT license를 준수합니다. [LICENSE](https://github.com/pro00er/commit-checker/LICENSE.md)에서 자세한 정보를 확인할 수 있습니다.  
+MIT license를 준수합니다. [LICENSE](https://github.com/pro00er/commit-checker/LICENSE)에서 자세한 정보를 확인할 수 있습니다.  
