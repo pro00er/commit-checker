@@ -1,4 +1,4 @@
-config_*.json
+config*.json
 error.log
 .idea/
 
