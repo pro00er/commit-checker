@@ -2,11 +2,11 @@ import datetime
 import json
 import logging
 from logging.config import fileConfig
+import re
 
 import requests
-from apscheduler.schedulers.background import BackgroundScheduler
 from flask_apscheduler import APScheduler
-from flask import Flask
+from flask import Flask, jsonify
 
 app = Flask(__name__)
 
@@ -15,12 +15,15 @@ logger = logging.getLogger('root')
 
 # MODE = 'prod' || 'dev'
 MODE = 'dev'
-
-with open('config_{}.json'.format(MODE), 'r') as f:
+with open(f'config_{MODE}.json', 'r') as f:
     config = json.load(f)
 
-git_config = config['github']
-slack_config = config['slack']
+git_cfg = config['github']
+slack_cfg = config['slack']
+checker_cfg = config['checker']
+
+SLACK_API_URL = 'https://slack.com/api/chat.postMessage'
+GIT_API_URL = f'https://api.github.com/repos/{git_cfg["repo"]["owner"]}/{git_cfg["repo"]["name"]}/commits'
 
 
 class Config(object):
@@ -51,113 +54,103 @@ class Config(object):
     SCHEDULER_API_ENABLED = True
 
 
-# TODO: remove test url
-# @app.route('/', methods=['GET'])
-def send_msg_to_zero_committer(n_days=1):
-    """현재부터 24* n 시간 전(n일 전)까지의 commit 수가 0이면, 해당 사용자에게 슬랙 알람 메시지를 전송합니다.
+# TODO : test 분리
+def test():
+    send_msg_less_commiter(n_days=checker_cfg['period_day'], author_infos=checker_cfg['whom'],
+                           keyword=checker_cfg['commit_keyword'])
+    return 'working'
+
+
+def send_msg_less_commiter(keyword, n_days=1, author_infos=[{"commiter": git_cfg['user'], "target_commit_count": 1}]):
+    """현재부터 24* n 시간 전(n일 전)까지의 특정 commit 수가 n개 미만이면, 해당 사용자에게 멘션을 걸어 슬랙 알람 메시지를 전송합니다.
 
         Keyword arguments:
         n_days -- 지금으로부터 n 일 전 (기본값 1)
+        author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
+                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+        keyword --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
     """
     before_date = (datetime.datetime.now() - datetime.timedelta(days=n_days)).astimezone().isoformat()
+    commit_cnt = count_repo_commit(checked_date=before_date, author_infos=author_infos, keyword=keyword)
 
-    result = count_commit(before_date)
-
-    for author in git_config['committer']:
-        if result[author] == 0:
-            send_slack_mention_msg(author)
-
-    return 'dummy'
-
-
-def count_commit(checked_date):
-    """현재부터 checked_date 후로 발생한 특정 repo commit 수를 commiter별(config.json에 입력된 commiter)로 확인합니다.
-
-            Keyword arguments:
-            checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
-    """
-    url = f'https://api.github.com/repos/{git_config["repo"]["owner"]}/{git_config["repo"]["name"]}/commits'
-    token_user = git_config['user']
-    token = git_config['token']
-
-    result = {}
-
-    for author in git_config['committer']:
-        param = {'author': author, 'since': checked_date}
-        r = requests.get(url, params=param, auth=(token_user, token))
-
-        if r.status_code == 200:
-            commit_list = r.json()
-            result[author] = len(commit_list)
-        else:
-            app.logger.error(['Github API error: ', r.status_code, r.json()['message']])
-
-    return result
+    for info in author_infos:
+        author = info['commiter']
+        target_commit_cnt = info['target_commit_count']
+        if commit_cnt[author] < target_commit_cnt:
+            msg = slack_cfg['msg']['format'].format(*slack_cfg['msg']['args'])
+            send_slack_mention_msg(author, appended_msg=msg)
 
 
-# TODO
-def count_keyword_commit(checked_date, keywords):
+def count_repo_commit(checked_date, keyword, author_infos=[{"commiter": git_cfg['user'], "target_commit_count": 1}]):
     """현재부터 checked_date 후로 발생한 특정 repo commit 중,
-    특정 키워드가 포함된 commit 수를 commiter 별로 반환합니다.
+    특정 키워드가 포함된 commit 수를 commiter 별(config.json에 입력된 commiter)로 반환합니다.
 
             Keyword arguments:
             checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
+            author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
+                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+            keyword --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
     """
-
-    url = f'https://api.github.com/repos/{git_config["repo"]["owner"]}/{git_config["repo"]["name"]}/commits'
-    token_user = git_config['user']
-    token = git_config['token']
 
     result = {}
 
-    for author in git_config['committer']:
-        param = {'author': author, 'since': checked_date}
-        r = requests.get(url, params=param, auth=(token_user, token))
-
-        if r.status_code == 200:
-            commit_list = r.json()
-            # specific_commits = commit_list['commit_message'].contain(keywords)
-            # result[author] = len(specific_commits)
-        else:
-            app.logger.error(['Github API error: ', r.status_code, r.json()['message']])
+    for info in author_infos:
+        author = info['commiter']
+        result[author] = count_repo_commit_per_author(checked_date=checked_date, author=author, keyword_regexp=keyword)
 
     return result
 
 
-def send_slack_mention_msg(author):
+def count_repo_commit_per_author(checked_date, author, keyword_regexp=''):
+    """현재부터 checked_date 후로 발생한 특정 repo 의 author 의 commit 중,
+    특정 키워드가 포함된 commit 수를 반환합니다.
+
+            Keyword arguments:
+            checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
+            author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
+                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+            keyword_regexp --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
+    """
+
+    cnt = 0
+
+    param = {'author': author, 'since': checked_date}
+    r = requests.get(GIT_API_URL, params=param, auth=(git_cfg['user'], git_cfg['token']))
+
+    if r.status_code == 200:
+        commit_list = r.json()
+
+        if keyword_regexp == '':
+            cnt = len(commit_list)
+            return cnt
+
+        for commit in commit_list:
+            msg = commit['commit']['message']
+            if re.search(keyword_regexp, msg) is not None:
+                # print(msg)
+                cnt += 1
+    else:
+        app.logger.error([f'Github API error:  {r.status_code} {author} {r.json()["message"]}'])
+
+    return cnt
+
+
+def send_slack_mention_msg(author, appended_msg=''):
     """config 에 등록된 채널에 특정 슬랙 메시지를 전송합니다. github author 에 해당되는 user 를 멘션합니다
 
                 Keyword arguments:
                 author -- 슬랙 메시지에 멘션할 github author. config_prod.json 에 등록해둔 user_id 를 사용
     """
-    msg = f'<@{slack_config['user_id'][author]}> ' + slack_config['msg']['format'].format(*slack_config['msg']['args'])
+    msg = f'<@{slack_cfg["user_id"][author]}>' + appended_msg
 
     send_slack_msg(msg)
 
 
 def send_slack_msg(msg):
-    url = 'https://slack.com/api/chat.postMessage'
-    headers = {'Authorization': f'Bearer {slack_config["token"]}'}
-    body_data = {'channel': slack_config['channel_id'], 'text': msg}
+    headers = {'Authorization': f'Bearer {slack_cfg["token"]}'}
+    body_data = {'channel': slack_cfg['channel_id'], 'text': msg}
 
-    requests.post(url, data=body_data, headers=headers)
-
-
-# Set schedule
-# scheduler = BackgroundScheduler(timezone=custom['scheduled']['timezone'])
-# scheduler.add_job(func=check_commit_yesterday, trigger='cron', day_of_week=custom['scheduled']['day_of_week'],
-#                   hour=custom['scheduled']['hour'], minute=custom['scheduled']['minute'],
-#                   end_date=custom['scheduled']['end_date'])
-#
-# scheduler = BackgroundScheduler(timezone=custom['dev']['scheduled']['timezone'])
-# scheduler.add_job(func=test, trigger='cron', day_of_week=custom['dev']['scheduled']['day_of_week'],
-#                   hour=custom['dev']['scheduled']['hour'], minute=custom['dev']['scheduled']['minute'],
-#                   end_date=custom['dev']['scheduled']['end_date'])
-#
-# scheduler.start()
-#
-# # Shut down the scheduler when exiting the app
-# atexit.register(lambda: scheduler.shutdown())
+    requests.post(SLACK_API_URL, data=body_data, headers=headers)
 
 
 if __name__ == '__main__':
@@ -166,4 +159,6 @@ if __name__ == '__main__':
     scheduler.init_app(app)
     scheduler.start()
 
-    app.run('0.0.0.0', port=5002, debug=True)
+    # test()
+
+    app.run('0.0.0.0', port=5002, debug=False)

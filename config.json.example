@@ -16,20 +16,24 @@
       "end_date": "2020-11-20"
     }
   },
+  "checker": {
+    "commit_keyword":
+      "keyword-regexp",
+    "period_day": 6,
+    "whom": [
+      {
+        "commiter": "commiter-github-username",
+        "target_commit_count": 5
+      }
+    ]
+  },
   "github": {
     "user": "your-username",
     "token": "your-personal-access-tokens",
-    "committer": [
+    "repo": {
       "your-repo-commiter-01",
       "your-repo-commiter-02"
-    ],
-    "repo": {
-      "owner": "owner",
-      "name": "repo-name"
-    },
-    "count_commit_keyword": [
-      "commit-keyword-regexp"
-    ]
+    }
   },
   "slack": {
     "bot_name": "your-bot-name",
@@ -41,10 +45,10 @@
       "your-repo-commiter-02": "slack-user-id-02"
     },
     "msg": {
-      "format": "slack-bot-message-format",
+      "format": "This is dev test message {} {}",
       "args": [
-        'msg format argument 01',
-        'msg format argument 02'
+        "args0",
+        "args1"
       ]
     }
   }
