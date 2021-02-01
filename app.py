@@ -56,46 +56,46 @@ class Config(object):
 
 # TODO : test 분리
 def test():
-    send_msg_less_commiter(n_days=checker_cfg['period_day'], author_infos=checker_cfg['whom'],
+    send_msg_less_committer(n_days=checker_cfg['period_day'], author_infos=checker_cfg['whom'],
                            keyword=checker_cfg['commit_keyword'])
     return 'working'
 
 
-def send_msg_less_commiter(keyword, n_days=1, author_infos=[{"commiter": git_cfg['user'], "target_commit_count": 1}]):
+def send_msg_less_committer(keyword, n_days=1, author_infos=[{"committer": git_cfg['user'], "target_commit_count": 1}]):
     """현재부터 24* n 시간 전(n일 전)까지의 특정 commit 수가 n개 미만이면, 해당 사용자에게 멘션을 걸어 슬랙 알람 메시지를 전송합니다.
 
         Keyword arguments:
         n_days -- 지금으로부터 n 일 전 (기본값 1)
-        author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
-                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+        author_info -- commit 수를 체크할 committer 와 committer 별 목표 commit 수
+                    e.g. {"committer": "repo-committer-user-name", "target_commit_count": 1}
         keyword --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
     """
     before_date = (datetime.datetime.now() - datetime.timedelta(days=n_days)).astimezone().isoformat()
     commit_cnt = count_repo_commit(checked_date=before_date, author_infos=author_infos, keyword=keyword)
 
     for info in author_infos:
-        author = info['commiter']
+        author = info['committer']
         target_commit_cnt = info['target_commit_count']
         if commit_cnt[author] < target_commit_cnt:
             msg = slack_cfg['msg']['format'].format(*slack_cfg['msg']['args'])
             send_slack_mention_msg(author, appended_msg=msg)
 
 
-def count_repo_commit(checked_date, keyword, author_infos=[{"commiter": git_cfg['user'], "target_commit_count": 1}]):
+def count_repo_commit(checked_date, keyword, author_infos=[{"committer": git_cfg['user'], "target_commit_count": 1}]):
     """현재부터 checked_date 후로 발생한 특정 repo commit 중,
-    특정 키워드가 포함된 commit 수를 commiter 별(config.json에 입력된 commiter)로 반환합니다.
+    특정 키워드가 포함된 commit 수를 committer 별(config.json에 입력된 committer)로 반환합니다.
 
             Keyword arguments:
             checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
-            author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
-                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+            author_info -- commit 수를 체크할 committer 와 committer 별 목표 commit 수
+                    e.g. {"committer": "repo-committer-user-name", "target_commit_count": 1}
             keyword --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
     """
 
     result = {}
 
     for info in author_infos:
-        author = info['commiter']
+        author = info['committer']
         result[author] = count_repo_commit_per_author(checked_date=checked_date, author=author, keyword_regexp=keyword)
 
     return result
@@ -107,8 +107,8 @@ def count_repo_commit_per_author(checked_date, author, keyword_regexp=''):
 
             Keyword arguments:
             checked_date -- timestamp in ISO 8601 format: YYYY-MM-DDTHH:MM:SSZ.
-            author_info -- commit 수를 체크할 commiter 와 commiter 별 목표 commit 수
-                    e.g. {"commiter": "repo-commiter-user-name", "target_commit_count": 1}
+            author_info -- commit 수를 체크할 committer 와 committer 별 목표 commit 수
+                    e.g. {"committer": "repo-committer-user-name", "target_commit_count": 1}
             keyword_regexp --  regexp. 이 Regexp를 만족하는(포함하는) commit message 만 count 함.
     """
 

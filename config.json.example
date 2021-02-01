@@ -22,7 +22,7 @@
     "period_day": 6,
     "whom": [
       {
-        "commiter": "commiter-github-username",
+        "committer": "committer-github-username",
         "target_commit_count": 5
       }
     ]
@@ -31,8 +31,8 @@
     "user": "your-username",
     "token": "your-personal-access-tokens",
     "repo": {
-      "your-repo-commiter-01",
-      "your-repo-commiter-02"
+      "your-repo-committer-01",
+      "your-repo-committer-02"
     }
   },
   "slack": {
@@ -41,8 +41,8 @@
     "channel_name": "channel-name-to-send-the-message",
     "channel_id": "channel-id-to-send-the-message",
     "user_id": {
-      "your-repo-commiter-01": "slack-user-id-01",
-      "your-repo-commiter-02": "slack-user-id-02"
+      "your-repo-committer-01": "slack-user-id-01",
+      "your-repo-committer-02": "slack-user-id-02"
     },
     "msg": {
       "format": "This is dev test message {} {}",
