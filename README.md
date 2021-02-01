@@ -4,11 +4,13 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 
 
-- 특정 github repository 특정 사용자가 에 매일매일 커밋했는지 확인합니다. 커밋되지 않았을 경우 슬랙 채널에 알람 메시지를 전송합니다. 
-- 매일 매일 프로젝트에 기여하는 습관을 기르기 위한 도우미입니다. 일일 회고를 기록하는 스터디 그룹 리포지토리에 사용할 예정입니다. 
+- 특정 github repository 의 commiter 가 해당 기간동안 얼마나 커밋했는지 확인합니다. 커밋되지 않았을 경우 슬랙 채널에 알람 메시지를 전송합니다. 
+- 꾸준히 프로젝트에 기여하는 습관을 기르기 위한 도우미입니다. 
+  - 일일 회고 / 기간별 작업 commit 을 기록하는 스터디 그룹에 사용하고 있습니다. [공개 repo - pro00er/improve-ourselves 공부해서 남주자](https://github.com/pro00er/improve-ourselves)
 
 ## 핵심 기능  Key Feature
-- 특정 github repository의 특정 사용자의 기간별 커밋 수를 확인합니다. 
+- 특정 github repository의 특정 사용자의 기간별 commit 수를 확인합니다. 
+  - commit message 에 특정 키워드를 포함했을 떄에만 commit 수를 셉니다.
 - 설정값에 미치지 못하는 commit 수일 경우, 슬랙 채널에 알람 메시지를 전송합니다. 
 
 ## 사용 How To Use
@@ -16,7 +18,6 @@
   - 설정파일 예제(config.json.example)에서 github, slack 정보를 업데이트 한 후, 아래처럼 이름을 바꿔주세요.
     - `config_dev.json` : 테스트용 (for development) 설정파일명 
     - `config_prod.json` : 실제로 서버에서 동작시킬 설정파일명
-  - 각 설정의 `custom` 에서 전송할 슬랙 메시지(slack_msg), 정기적으로 동작이 실행되는 주기(scheduled)를 변경할 수 있습니다.
 
 ## Contributing
 - Thanks to [@ohahohah](https://github.com/ohahohah)
